@@ -413,7 +413,7 @@ async function generateList() {
 
   try {
     // 👇 Replace this URL with your Cloudflare Worker URL after deploying it
-    const WORKER_URL = 'cold-hat-479c.github-0b8.workers.dev';
+    const WORKER_URL = 'http://cold-hat-479c.github-0b8.workers.dev';
 
     const response = await fetch(WORKER_URL, {
       method: 'POST',
