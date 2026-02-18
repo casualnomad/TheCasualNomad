@@ -15,7 +15,7 @@
     --red: #e84f4f; --text: #e8e4dc; --muted: #6b7280; --tag-bg: #252b38;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; padding-bottom: 130px; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh;}
 
   /* ── SETUP ── */
   #setup-screen {
@@ -100,10 +100,13 @@
   .notice strong { color: var(--text); }
   .notice-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; padding: 0 2px; flex-shrink: 0; transition: color 0.15s; }
   .notice-close:hover { color: var(--text); }
+  .intel-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; padding: 0 2px; flex-shrink: 0; transition: color 0.15s; margin-left: auto;}
+  .intel-close:hover { color: var(--text); }
 
-  /* Add bar — fixed footer */
-  .add-bar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; background: var(--surface); border-top: 1px solid var(--border); padding: 14px 32px; }
-  .add-bar-inner { max-width: 760px; margin: 0 auto; }
+
+  /* Add bar */
+  .add-bar { background: transparent; border: 1px dashed var(--border); border-radius: 6px; padding: 14px 32px; margin: 0 0 24px 0; }  
+  .add-bar-inner { width: 100%; margin: 0 auto; }
   .add-bar-title { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
   .add-bar-row { display: flex; gap: 8px; flex-wrap: wrap; }
   .add-bar input, .add-bar select { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 8px 12px; outline: none; transition: border-color 0.15s; }
@@ -298,8 +301,11 @@
     <div class="summary-card">
       <div class="summary-head">
         <span style="color:var(--accent);font-size:11px">✦</span>
-        <span class="summary-head-label">Trip Intelligence</span>
+        <span class="summary-head-label">Trip Intelligence
+          <button class="intel-close" id="intel-hide-btn" onclick="dismissIntel()" title="Hide">×</button>
+          </span>
       </div>
+      <div id="summary-destination">
       <div class="summary-item--destination">
           <div class="summary-item-label">🌍 Destination</div>
           <div class="summary-item-text" id="sum-destination"></div>
@@ -318,15 +324,18 @@
           <div class="summary-item-text" id="sum-climate"></div>
         </div>
       </div>
+     </div>
     </div>
   </div>
 
   <div class="main">
     <div id="sections-container"></div>
     <button class="add-section-btn" onclick="openAddSection()">+ Add Category</button>
+    <button class="add-section-btn" onclick="openAddItem()">+ Add Item Manually</button>
+
   </div>
 
-  <div class="add-bar">
+  <div class="add-bar" id="add-bar" style="display:none"> 
     <div class="add-bar-inner">
       <div class="add-bar-title">+ Add Item Manually</div>
       <div class="add-bar-row">
@@ -404,10 +413,26 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('new-item-name').addEventListener('keydown', e => { if (e.key==='Enter') addItem(); });
   document.getElementById('new-section-name').addEventListener('keydown', e => { if(e.key==='Enter') confirmAddSection(); if(e.key==='Escape') closeAddSection(); });
   document.getElementById('sectionModal').addEventListener('click', e => { if(e.target===document.getElementById('sectionModal')) closeAddSection(); });
+
 });
 
 // ── NOTICE ──
 function dismissNotice() { document.getElementById('notice-bar').style.display = 'none'; }
+
+// ── INTEL ──
+function dismissIntel() { document.getElementById('summary-destination').style.display = 'none';
+                          document.getElementById('summary-destination').style.display = 'none';
+                          document.getElementById('summary-destination').style.display = 'none';
+                          document.getElementById('intel-hide-btn').onclick = function() { showIntel(); };
+                          document.getElementById('intel-hide-btn').textContent = '+';
+                          
+ }
+ function showIntel() { document.getElementById('summary-destination').style.display = 'block';
+                        document.getElementById('summary-destination').style.display = 'block';
+                        document.getElementById('summary-destination').style.display = 'block';
+                        document.getElementById('intel-hide-btn').onclick = function() { dismissIntel(); };
+                        document.getElementById('intel-hide-btn').textContent = 'x';
+ }
 
 // ── TAGS ──
 function addTag() {
@@ -704,6 +729,9 @@ function confirmAddSection() {
   const name=document.getElementById('new-section-name').value.trim(); if(!name){document.getElementById('new-section-name').focus();return;}
   sections.push({id:'sec-'+Date.now(),name,icon:selectedEmoji});
   renderSections(); updateSectionSelect(); closeAddSection(); save();
+}
+function openAddItem() {
+  document.getElementById('add-bar').style.display='block';
 }
 </script>
 <div class="version-badge">Github v0.5</div>
