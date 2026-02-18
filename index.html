@@ -12,7 +12,7 @@
     --red: #e84f4f; --text: #e8e4dc; --muted: #6b7280; --tag-bg: #252b38;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; padding-bottom: 100px; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; padding-bottom: 130px; }
 
   /* ── SETUP ── */
   #setup-screen {
@@ -91,12 +91,15 @@
   /* ── MAIN ── */
   .main { max-width: 760px; margin: 0 auto; padding: 40px 32px 0; }
   .notice-bar { max-width: 760px; margin: 20px auto 0; padding: 0 32px; }
-  .notice { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 4px; padding: 14px 16px; font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; line-height: 1.6; }
+  .notice { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 4px; padding: 12px 16px; font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; line-height: 1.6; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .notice strong { color: var(--text); }
+  .notice-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; padding: 0 2px; flex-shrink: 0; transition: color 0.15s; }
+  .notice-close:hover { color: var(--text); }
 
-  /* Add bar */
-  .add-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 32px; }
-  .add-bar-title { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
+  /* Add bar — fixed footer */
+  .add-bar { position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; background: var(--surface); border-top: 1px solid var(--border); padding: 14px 32px; }
+  .add-bar-inner { max-width: 760px; margin: 0 auto; }
+  .add-bar-title { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
   .add-bar-row { display: flex; gap: 8px; flex-wrap: wrap; }
   .add-bar input, .add-bar select { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 8px 12px; outline: none; transition: border-color 0.15s; }
   .add-bar input:focus, .add-bar select:focus { border-color: var(--accent); }
@@ -171,6 +174,7 @@
     .progress-bar, .notice-bar, .summary-bar { padding: 0 20px; }
     .setup-card { padding: 28px 20px; }
     .setup-row { grid-template-columns: 1fr; }
+    .add-bar { padding: 14px 20px; }
     .add-bar-row { flex-direction: column; }
     .summary-grid { grid-template-columns: 1fr; }
     .summary-item { border-right: none; border-bottom: 1px solid var(--border); }
@@ -275,9 +279,10 @@
     </div>
   </div>
 
-  <div class="notice-bar">
+  <div class="notice-bar" id="notice-bar">
     <div class="notice">
-      <strong>💾 Auto-saved</strong> — your list is saved in this browser. Close the tab and come back anytime.
+      <span><strong>💾 Auto-saved</strong> — your list is saved in this browser. Close the tab and come back anytime.</span>
+      <button class="notice-close" onclick="dismissNotice()" title="Dismiss">×</button>
     </div>
   </div>
 
@@ -305,7 +310,12 @@
   </div>
 
   <div class="main">
-    <div class="add-bar">
+    <div id="sections-container"></div>
+    <button class="add-section-btn" onclick="openAddSection()">+ Add Category</button>
+  </div>
+
+  <div class="add-bar">
+    <div class="add-bar-inner">
       <div class="add-bar-title">+ Add Item Manually</div>
       <div class="add-bar-row">
         <input class="item-name-input" type="text" id="new-item-name" placeholder="Item name" maxlength="80">
@@ -320,8 +330,6 @@
         <button class="btn btn-sm" onclick="addItem()">Add</button>
       </div>
     </div>
-    <div id="sections-container"></div>
-    <button class="add-section-btn" onclick="openAddSection()">+ Add Category</button>
   </div>
 </div>
 
@@ -385,6 +393,9 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('new-section-name').addEventListener('keydown', e => { if(e.key==='Enter') confirmAddSection(); if(e.key==='Escape') closeAddSection(); });
   document.getElementById('sectionModal').addEventListener('click', e => { if(e.target===document.getElementById('sectionModal')) closeAddSection(); });
 });
+
+// ── NOTICE ──
+function dismissNotice() { document.getElementById('notice-bar').style.display = 'none'; }
 
 // ── TAGS ──
 function addTag() {
