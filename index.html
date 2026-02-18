@@ -28,6 +28,7 @@
   .setup-logo { font-family: 'Bebas Neue', sans-serif; font-size: 30px; letter-spacing: 3px; color: var(--accent); margin-bottom: 14px; text-align: center; }
   .setup-sub { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 16px; }
   .ai-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(244,166,34,0.1); border: 1px solid rgba(244,166,34,0.25); color: var(--accent); font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1px; padding: 4px 10px; border-radius: 3px; margin-bottom: 28px; }
+  .version-badge { text-align: center; align-items: center; gap: 6px; background: rgba(244,166,34,0.1); border: 1px solid rgba(244,166,34,0.25); color: var(--accent); font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 1px; padding: 4px 10px; border-radius: 3px; margin-bottom: 28px; }
   .setup-field { margin-bottom: 18px; }
   .setup-field label { display: block; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; }
   .setup-field input, .setup-field textarea {
@@ -705,5 +706,6 @@ function confirmAddSection() {
   renderSections(); updateSectionSelect(); closeAddSection(); save();
 }
 </script>
+<div class="version-badge">Github v0.1</div>
 </body>
 </html>
