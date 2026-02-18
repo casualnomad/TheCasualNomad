@@ -247,7 +247,7 @@
     </button>
   </div>
 </div>
-<div class="version-badge">Github v0.6</div>
+<div class="version-badge">Github v0.6.1</div>
 
 <!-- ── GENERATING ── -->
 <div id="generating-screen">
@@ -303,7 +303,7 @@
       <div class="summary-head">
         <span style="color:var(--accent);font-size:11px">✦</span>
         <span class="summary-head-label">Trip Intelligence
-          <button class="intel-close" id="intel-hide-btn" onclick="dismissIntel()" title="Hide">×</button>
+          <button class="intel-close" id="intel-hide-btn" onclick="dismissIntel()" title="Hide">x</button>
           </span>
       </div>
       <div id="summary-destination">
@@ -557,7 +557,7 @@ Return ONLY a JSON object in this exact format:
   "summary": {
     "destination": "3–4 sentence overview of the country/region and what makes it special for travel",
     "activities": "Brief description of the trip's activity style and vibe",
-    "cost": "Estimated daily budget range for mid-range travellers (e.g. $40–$60/day) Include cost-specific tips if relevant (e.g. 'street food is very cheap and a must-try', 'tipping is not customary', 'look out for these cheap eats' etc)",
+    "cost": "Estimated daily budget range for mid-range travellers (e.g. $40–$60/day). Always display all prices in the local currency, doing a general conversion from USD if needed. Include cost-specific tips if relevant (e.g. 'street food is very cheap and a must-try', 'tipping is not customary', 'look out for these cheap eats' etc)",
     "climate": "What weather and climate conditions to expect for the given travel dates - be detailed and specific"
   },
   "sections": [
@@ -579,14 +579,14 @@ Badge rules: "key" = essential item, "buy" = buy before trip, "local" = buy at d
 
 Guidelines:
 - 6-10 sections tailored to this specific trip
-- 4-10 items per section
+- 3-10 items per section
 - Notes must be SHORT and SPECIFIC to their destination/activities
 - Always include: Clothing, Footwear, Tech & Electronics, Health & Toiletries, Documents & Money
 - Add TRIP-SPECIFIC sections (e.g. "Motorbike Gear" for moto tours, "Water Activities" for kayaking/diving)
 - For one-bag/carry-on: suggest versatile multi-use items, note laundry strategy
 - Check the climate and season of the destination and travel dates and adjust clothing/gear recommendations accordingly
 - For hot/humid climates: prioritise lightweight quick-dry fabrics, strong sun/insect protection
-- For adventure activities: include specific gear for those activities
+- For adventure activities: include specific gear for those activities, if not available locally or from rental providers or tour operators
 - Use your knowledge of the supplied bag/kit to tailor recommendations (e.g. if they have a 35L backpack, suggest compact packing strategies and versatile items)
 - Be opinionated and practical — give real recommendations not generic placeholders
 - Be cheerful and encouraging in the tone of the item notes, like a knowledgeable friend who's excited for the trip
