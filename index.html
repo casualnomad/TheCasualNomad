@@ -449,6 +449,7 @@ function startFresh() {
 
 function regenList() {
   if (!confirm('Regenerate the list from AI? Your current items will be replaced.')) return;
+  document.getElementById('generate-btn').disabled = false;
   editTrip();
 }
 
