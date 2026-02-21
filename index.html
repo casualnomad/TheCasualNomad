@@ -243,7 +243,7 @@
     </button>
   </div>
 </div>
-<div class="version-badge">Github Dev v0.6.2</div>
+<div class="version-badge">Github Dev v0.6.9</div>
 
 <!-- ── GENERATING ── -->
 <div id="generating-screen">
@@ -266,7 +266,7 @@
 <div id="app">
   <div class="hero">
     <div class="hero-inner">
-      <div class="trip-tag">🎒 <span id="h-bag">One Bag</span></div>
+      <div class="trip-tag">🎒 <span id="h-bag">One Bag</span><span id="s-bag">35L</span></div>
       <h1 id="h-destination">MY<br><span>TRIP</span></h1>
       <div class="hero-meta" id="h-meta"></div>
       <div class="hero-actions">
@@ -284,6 +284,8 @@
     <div class="progress-label">
       <span>Packed <strong id="packedCount">0</strong> of <strong id="totalCount">0</strong> items</span>
       <span id="progressPct" style="color:var(--accent)">0%</span>
+      <span>Weight <strong id="packedWeight">0</strong> of <strong id="totalWeight">0</strong> kg</span>
+      <span id="weightPct" style="color:var(--accent)">0 Grams</span>
     </div>
   </div>
 
@@ -374,7 +376,7 @@
 const EMOJIS = ['👕','🧥','👟','👜','📱','💊','📄','🏕️','🧴','🔦','⚡','🎒','🛏️','📦','🍽️','💰','📷','🗺️','🧳','🎿','🏊','🚴','🏔️','🌊','🎧','💻','🔑','🪥','🩹','🧢','☀️','🕶️','🔋','🗝️','🩺'];
 const STORAGE_KEY = 'packListData_v2';
 
-let sections = [], items = [], tripMeta = {}, tripSummary = {}, tags = [], selectedEmoji = '📦';
+let sections = [], items = [], tripMeta = {}, tripSummary = {}, selectedEmoji = '📦';
 
 // ── STORAGE ──
 function save() {
@@ -387,7 +389,6 @@ function loadSaved() {
     const d = JSON.parse(raw);
     if (!d.tripMeta || !d.sections) return false;
     tripMeta = d.tripMeta; tripSummary = d.tripSummary || {}; sections = d.sections; items = d.items || [];
-    tags = [...(tripMeta.tags || [])];
     return true;
   } catch(e) { return false; }
 }
@@ -431,19 +432,6 @@ function dismissIntel() { document.getElementById('summary-destination').style.d
                         document.getElementById('intel-hide-btn').textContent = 'x';
  }
 
-// ── TAGS ──
-function addTag() {
-  const el = document.getElementById('s-tag-input');
-  const v = el.value.trim(); if (!v) return;
-  tags.push(v); renderTags(); el.value = '';
-}
-function renderTags() {
-  document.getElementById('s-tags').innerHTML = tags.map((t,i) =>
-    `<span class="meta-tag" onclick="removeTag(${i})">${t} <span class="remove">×</span></span>`
-  ).join('');
-}
-function removeTag(i) { tags.splice(i,1); renderTags(); }
-
 // ── SETUP / EDIT / FRESH ──
 function editTrip() {
   document.getElementById('s-destination').value = tripMeta.dest || '';
@@ -452,15 +440,14 @@ function editTrip() {
   document.getElementById('s-duration').value = tripMeta.duration || '';
   document.getElementById('s-activities').value = tripMeta.activities || '';
   document.getElementById('s-extra').value = tripMeta.extra || '';
-  tags = [...(tripMeta.tags||[])]; renderTags();
+  document.getElementById('s-bag-size').value = tripMeta.size || '';
   show('setup-screen');
 }
 
 function startFresh() {
   if (!confirm('Clear everything and start a new list?')) return;
-  clearSaved(); sections=[]; items=[]; tripMeta={}; tripSummary={}; tags=[];
-  ['s-destination','s-bag','s-dates','s-duration','s-activities','s-extra'].forEach(id => document.getElementById(id).value = '');
-  renderTags(); show('setup-screen');
+  clearSaved(); sections=[]; items=[]; tripMeta={}; tripSummary={};
+  ['s-destination','s-bag','s-dates','s-duration','s-activities','s-extra','s-bag-size'].forEach(id => document.getElementById(id).value = '');
 }
 
 function regenList() {
@@ -520,7 +507,7 @@ async function generateList() {
     items = [];
     parsed.sections.forEach((s, si) => {
       (s.items || []).forEach((item, ii) => {
-        items.push({ id: `i-${si}-${ii}`, sectionId: 'sec-'+si, name: item.name, note: item.note || '', badge: item.badge || '', checked: false });
+        items.push({ id: `i-${si}-${ii}`, sectionId: 'sec-'+si, name: item.name, note: item.note || '', weight: item.weight || 0, badge: item.badge || '', checked: false });
       });
     });
 
@@ -564,6 +551,7 @@ Return ONLY a JSON object in this exact format:
         {
           "name": "Item name with quantity if helpful e.g. T-shirts x3",
           "note": "Short specific tip for this trip (max 12 words, destination-specific, not generic)",
+          "weight": "estimated weight in grams (e.g. 400)",
           "badge": "key|buy|local|hire"
         }
       ]
@@ -585,7 +573,6 @@ Guidelines:
 - For adventure activities: include specific gear for those activities unless you can hire locally from rental providers or tour operators
 - Use your knowledge of the supplied bag/kit to tailor recommendations (e.g. if they have a 35L backpack, suggest compact packing strategies and versatile items)
 - Estimate the weight of each item and keep the total weight in mind based on the bag capacity/size if provided
-- include the estimated weight of each item in the note field, e.g. "weighs approx 400g, consider packing if you have room"
 - Be opinionated and practical — give real recommendations not generic placeholders
 - Be cheerful and encouraging in the tone of the item notes, like a knowledgeable friend who's excited for the trip
 - For the summary fields: be concise but vivid — destination is 1-2 sentences max, activities and climate are 1 sentence each
@@ -603,13 +590,14 @@ function advanceStep(n) {
 
 // ── HERO ──
 function renderHero() {
-  const { dest='My Trip', bag, dates, duration, tags:t=[] } = tripMeta;
+  const { dest='My Trip', bag, size, dates, duration } = tripMeta;
   const words = dest.toUpperCase().split(' ');
   const mid = Math.ceil(words.length/2);
   const l1 = words.slice(0,mid).join(' '), l2 = words.slice(mid).join(' ');
   document.getElementById('h-destination').innerHTML = l2 ? `${l1}<br><span>${l2}</span>` : `<span>${l1}</span>`;
   document.getElementById('h-bg-text').textContent = dest.toUpperCase();
   document.getElementById('h-bag').textContent = bag || 'One Bag';
+  document.getElementById('s-bag').textContent = size || '' ;
   let m='';
   if (dates) m+=`<span>📅 <strong>${dates}</strong></span>`;
   if (duration) m+=`<span>⏱ <strong>${duration}</strong></span>`;
@@ -655,7 +643,7 @@ function renderSections() {
 }
 
 function renderItemHTML(item) {
-  const bm = { key:'<span class="badge badge-key">🔥 Key Item</span>', buy:'<span class="badge badge-buy">🛒 To Buy</span>', local:'<span class="badge badge-local">📍 Buy Local</span>' };
+  const bm = { key:'<span class="badge badge-key">🔥 Key Item</span>', buy:'<span class="badge badge-buy">🛒 To Buy</span>', local:'<span class="badge badge-local">📍 Buy Local</span>', hire:'<span class="badge badge-hire">🤝 Hire</span>' };
   const badge = item.badge ? (bm[item.badge]||'') : '';
   return `
     <div class="item${item.checked?' checked':''}" id="item-${item.id}">
