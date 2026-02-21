@@ -91,7 +91,7 @@ tripSummary = {
 };
 
 document.getElementById('h-destination').innerHTML = 'MY<br><span style="color:var(--accent)">VIETNAM</span>';
-document.getElementById('h-bag').textContent = 'Kathmandu Trailhead 35L';
+document.getElementById('h-bag').textContent = 'Kathmandu Trailhead';
 renderSections();
 renderSummary();
 updateSectionSelect();

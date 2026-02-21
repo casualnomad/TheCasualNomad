@@ -203,7 +203,7 @@
     <div class="ai-badge">✦ Powered by Claude AI</div>
 
     <div class="setup-field">
-      <label>Destination / Trip Name</label>
+      <label>Destination / Trip Type</label>
       <input type="text" id="s-destination" placeholder="e.g. Vietnam, Iceland, Morocco" maxlength="60">
     </div>
     <div class="setup-field">
@@ -211,7 +211,7 @@
       <input type="text" id="s-bag" placeholder="e.g. Kathmandu Trailhead, Cotopaxi Allpa, etc" maxlength="60">
     </div>
     <div class="setup-field">
-    <label>Weight Goal <span style="color:var(--muted);font-size:10px">(e.g. 7kg carry-on, 23kg check-in)</span></label>
+    <label>Weight Goal <span style="color:var(--muted);font-size:10px"> - Total travel weight in KG</span></label>
       <input type="number" id="s-bag-size" placeholder="e.g. 7KG, 23KG" maxlength="60">
     </div>
     <div class="setup-row">
@@ -263,12 +263,12 @@
 <div id="app">
   <div class="hero">
     <div class="hero-inner">
-      <div class="trip-tag">🎒 <span id="h-bag">One Bag</span><span id="s-bag">35L</span></div>
+      <div class="trip-tag">🎒 <span id="h-bag"></span><span id="s-bag"></span></div>
       <h1 id="h-destination">MY<br><span>TRIP</span></h1>
       <div class="hero-meta" id="h-meta"></div>
       <div class="hero-actions">
         <button class="btn btn-outline btn-sm" onclick="resetAll()">↺ Reset All Ticks</button>
-        <button class="btn btn-outline btn-sm" onclick="editTrip()">✏ Edit Details</button>
+        <!-- <button class="btn btn-outline btn-sm" onclick="editTrip()">✏ Edit Details</button> -->
         <button class="btn btn-outline btn-sm" onclick="regenList()" style="color:var(--accent);border-color:rgba(244,166,34,0.3)">✦ Regenerate</button>
         <button class="btn btn-outline btn-sm" onclick="startFresh()" style="color:var(--red);border-color:rgba(232,79,79,0.4)">✕ Start Fresh</button>
       </div>
@@ -439,7 +439,7 @@ function editTrip() {
   document.getElementById('s-duration').value = tripMeta.duration || '';
   document.getElementById('s-activities').value = tripMeta.activities || '';
   document.getElementById('s-extra').value = tripMeta.extra || '';
-  document.getElementById('s-bag-size').value = tripMeta.size || '';
+  document.getElementById('s-bag-size').value = tripMeta.capacity || '';
   show('setup-screen');
 }
 
