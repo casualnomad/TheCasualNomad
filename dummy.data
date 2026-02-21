@@ -3,21 +3,96 @@ document.getElementById('setup-screen').style.display = 'none';
 document.getElementById('generating-screen').style.display = 'none';
 document.getElementById('app').style.display = 'block';
 
-// Populate with dummy data so it renders properly
-sections = [
-  { id: 'sec-1', name: 'Clothing', icon: '👕' },
-  { id: 'sec-2', name: 'Electronics', icon: '🔌' }
-];
-items = [
-  { id: 'item-1', sectionId: 'sec-1', name: 'T-Shirts', note: 'x3 merino wool', badge: 'key', checked: false },
-  { id: 'item-2', sectionId: 'sec-1', name: 'Rain Jacket', note: '', badge: '', checked: true },
-  { id: 'item-3', sectionId: 'sec-2', name: 'Phone Charger', note: 'USB-C', badge: 'buy', checked: false }
-];
-tripSummary = { destination: "Ireland is a land of emerald landscapes, ancient stone circles, and vibrant cultural heritage where misty coastlines meet rolling green hills. May offers the perfect shoulder season—mild weather, long daylight hours, and fewer crowds than summer.", activities: 'Motorbike, beaches', climate: 'Hot & humid', cost: 'Budget' };
+tripMeta = {
+  dest: 'Vietnam',
+  bag: 'Kathmandu Trailhead',
+  capacity: '7kg',
+  dates: 'Mar – Apr',
+  duration: '3 Weeks',
+  activities: 'Motorbike touring, beach days, overnight trains, street food, temple visits',
+  extra: 'Hot and humid. No checked luggage. I run hot and sweat a lot.'
+};
 
-// Re-render everything
+sections = [
+  { id: 'sec-1', name: 'Clothing',           icon: '👕' },
+  { id: 'sec-2', name: 'Footwear',            icon: '👟' },
+  { id: 'sec-3', name: 'Tech & Electronics',  icon: '💻' },
+  { id: 'sec-4', name: 'Health & Toiletries', icon: '🧴' },
+  { id: 'sec-5', name: 'Documents & Money',   icon: '📄' },
+  { id: 'sec-6', name: 'Motorbike Gear',      icon: '🏍️' },
+  { id: 'sec-7', name: 'Sleep & Comfort',     icon: '🛏️' },
+  { id: 'sec-8', name: 'Snacks & Hydration',  icon: '🍽️' }
+];
+
+items = [
+  // Clothing
+  { id: 'item-1',  sectionId: 'sec-1', name: 'Merino T-Shirts x3',       note: 'Lightweight, odour-resistant — perfect for humid days',    weight: 150,  badge: 'key',   checked: false },
+  { id: 'item-2',  sectionId: 'sec-1', name: 'Linen Shirt x2',           note: 'Breathable for temples and restaurants',                   weight: 180,  badge: '',      checked: false },
+  { id: 'item-3',  sectionId: 'sec-1', name: 'Quick-dry Shorts x3',      note: 'Doubles as swimwear in a pinch',                           weight: 200,  badge: 'buy',   checked: true  },
+  { id: 'item-4',  sectionId: 'sec-1', name: 'Long Linen Pants x1',      note: 'Required for temple entry in central Vietnam',             weight: 280,  badge: 'key',   checked: false },
+  { id: 'item-5',  sectionId: 'sec-1', name: 'Merino Boxers x4',         note: 'Worth every cent — dries overnight',                      weight: 800,   badge: 'buy',   checked: false },
+  { id: 'item-6',  sectionId: 'sec-1', name: 'Lightweight Rain Jacket',  note: 'Doubles as wind layer on the bike at speed',               weight: 350,  badge: 'key',   checked: true  },
+  { id: 'item-7',  sectionId: 'sec-1', name: 'Swimwear x1',              note: 'Da Nang and Mui Ne beaches are unmissable',                weight: 120,  badge: '',      checked: false },
+  { id: 'item-8',  sectionId: 'sec-1', name: 'Merino Socks x3',          note: 'Prevents blisters on longer riding days',                  weight: 60,   badge: '',      checked: false },
+
+  // Footwear
+  { id: 'item-9',  sectionId: 'sec-2', name: 'Trail Runners',            note: 'Your all-day shoe — temple, street, light hike',          weight: 620,  badge: 'key',   checked: false },
+  { id: 'item-10', sectionId: 'sec-2', name: 'Sandals (Teva / Birk)',    note: 'Essential for guesthouses and beach days',                 weight: 380,  badge: '',      checked: false },
+  { id: 'item-11', sectionId: 'sec-2', name: 'Riding Boots',             note: 'Hire locally in Hanoi — saves major bag space',           weight: 0,    badge: 'hire',  checked: false },
+
+  // Tech
+  { id: 'item-12', sectionId: 'sec-3', name: 'iPhone + USB-C Cable',     note: 'Grab an extra cable — they break constantly here',        weight: 220,  badge: 'key',   checked: false },
+  { id: 'item-13', sectionId: 'sec-3', name: 'Anker 10,000mAh Powerbank',note: 'Keep charged for long bus and train legs',                weight: 180,  badge: 'buy',   checked: false },
+  { id: 'item-14', sectionId: 'sec-3', name: 'GaN Charger (65W)',        note: 'One brick to rule them all — laptop + phone + bank',      weight: 130,  badge: 'buy',   checked: true  },
+  { id: 'item-15', sectionId: 'sec-3', name: 'Universal Adapter',        note: 'Vietnam uses Type A/C — most modern hostels are fine',    weight: 90,   badge: '',      checked: false },
+  { id: 'item-16', sectionId: 'sec-3', name: 'Kindle',                   note: 'Overnight trains are long and beautiful',                 weight: 174,  badge: '',      checked: false },
+  { id: 'item-17', sectionId: 'sec-3', name: 'Noise Cancelling Earbuds', note: 'Non-negotiable on sleeper trains',                        weight: 55,   badge: 'key',   checked: false },
+
+  // Health & Toiletries
+  { id: 'item-18', sectionId: 'sec-4', name: 'SPF50 Sunscreen x2',       note: 'Buy extra in Hanoi — cheap and widely available',         weight: 200,  badge: 'local', checked: false },
+  { id: 'item-19', sectionId: 'sec-4', name: 'DEET Insect Repellent',    note: 'Essential for Mekong Delta and jungle areas',             weight: 100,  badge: 'buy',   checked: false },
+  { id: 'item-20', sectionId: 'sec-4', name: 'Dioralyte Sachets x6',     note: 'Rehydrate fast after sweaty riding days',                 weight: 60,   badge: 'buy',   checked: false },
+  { id: 'item-21', sectionId: 'sec-4', name: 'Travel First Aid Kit',     note: 'Include blister pads, antiseptic, and ibuprofen',         weight: 180,  badge: 'key',   checked: false },
+  { id: 'item-22', sectionId: 'sec-4', name: 'Solid Shampoo Bar',        note: 'Saves liquid allowance — lasts the full trip',            weight: 55,   badge: '',      checked: true  },
+  { id: 'item-23', sectionId: 'sec-4', name: 'Microfibre Towel',         note: 'Not all guesthouses provide towels',                     weight: 120,  badge: '',      checked: false },
+  { id: 'item-24', sectionId: 'sec-4', name: 'Prescription Meds',        note: 'Bring full supply — matching brands unreliable',          weight: 80,   badge: 'key',   checked: false },
+
+  // Documents & Money
+  { id: 'item-25', sectionId: 'sec-5', name: 'Passport (6mo+ validity)', note: 'E-visa required — apply at least 3 days before travel',  weight: 40,   badge: 'key',   checked: false },
+  { id: 'item-26', sectionId: 'sec-5', name: 'Vietnam E-Visa Printout',  note: 'Print a copy — some border crossings still ask for it',  weight: 10,   badge: 'key',   checked: false },
+  { id: 'item-27', sectionId: 'sec-5', name: 'Travel Insurance Docs',    note: 'Motorbike cover is essential — check your policy',       weight: 10,   badge: 'key',   checked: true  },
+  { id: 'item-28', sectionId: 'sec-5', name: 'Wise / Revolut Card',      note: 'Best rates for VND — ATMs charge fees so withdraw big',  weight: 5,    badge: 'buy',   checked: false },
+  { id: 'item-29', sectionId: 'sec-5', name: 'USD Cash (emergency $100)',note: 'Accepted at borders and some hotels as backup',          weight: 5,    badge: '',      checked: false },
+
+  // Motorbike Gear
+  { id: 'item-30', sectionId: 'sec-6', name: 'Full-face Helmet',         note: 'Hire in Hanoi — about $5/day from reputable shops',      weight: 0,    badge: 'hire',  checked: false },
+  { id: 'item-31', sectionId: 'sec-6', name: 'Riding Gloves',            note: 'Your hands will thank you after day 1',                  weight: 180,  badge: 'buy',   checked: false },
+  { id: 'item-32', sectionId: 'sec-6', name: 'Dry Bag (10L)',            note: 'Keeps your gear safe through sudden downpours',          weight: 120,  badge: 'buy',   checked: false },
+  { id: 'item-33', sectionId: 'sec-6', name: 'Buff / Neck Gaiter',       note: 'Blocks dust and sun on open highways',                   weight: 40,   badge: 'key',   checked: false },
+  { id: 'item-34', sectionId: 'sec-6', name: 'Phone Mount for Bike',     note: 'Google Maps offline is your best friend on the road',    weight: 60,   badge: 'buy',   checked: false },
+
+  // Sleep & Comfort
+  { id: 'item-35', sectionId: 'sec-7', name: 'Sleep Sheet (silk liner)', note: 'Some budget guesthouses have questionable linen',        weight: 110,  badge: '',      checked: false },
+  { id: 'item-36', sectionId: 'sec-7', name: 'Eye Mask',                 note: 'Sleeper trains have lights on at all hours',             weight: 20,   badge: '',      checked: true  },
+  { id: 'item-37', sectionId: 'sec-7', name: 'Foam Earplugs x4 pairs',   note: 'Vietnamese cities start loud at 5am',                   weight: 15,   badge: 'buy',   checked: false },
+  { id: 'item-38', sectionId: 'sec-7', name: 'Small Padlock',            note: 'For hostel lockers and bag zips on overnight buses',     weight: 80,   badge: '',      checked: false },
+
+  // Snacks & Hydration
+  { id: 'item-39', sectionId: 'sec-8', name: 'Reusable Water Bottle',    note: 'Refill at hostels — reduce plastic, stay hydrated',      weight: 180,  badge: 'key',   checked: false },
+  { id: 'item-40', sectionId: 'sec-8', name: 'Protein Bars x6',          note: 'Long riding days with no food stops happen',             weight: 240,  badge: '',      checked: false },
+  { id: 'item-41', sectionId: 'sec-8', name: 'Electrolyte Tablets',      note: 'You will sweat more than you think',                    weight: 60,   badge: 'buy',   checked: false }
+];
+
+tripSummary = {
+  destination: "Vietnam stretches over 1,600km of coastline, ancient towns, and dramatic highland passes — one of Southeast Asia's most rewarding motorbike destinations. March–April is prime riding season: the south is dry and hot, the central coast is clear, and the north is warming up perfectly.",
+  activities:  'Motorbike touring the full length with beach days, overnight trains, street food crawls, and temple visits along the way.',
+  cost:        'Budget ₫800,000–₫1,400,000/day (~$32–$56 USD). Street pho from ₫30,000, cheap bia hoi beer at ₫5,000 a glass. Splurge on a night in Hoi An — worth it.',
+  climate:     'Hot and humid in the south (32°C+), warm and clear through Da Nang, cooler and greener in the north around Hanoi (24–28°C). Pack for sweaty days and breezy evenings.'
+};
+
 document.getElementById('h-destination').innerHTML = 'MY<br><span style="color:var(--accent)">VIETNAM</span>';
-document.getElementById('h-bag').textContent = 'Kathmandu 35L';
+document.getElementById('h-bag').textContent = 'Kathmandu Trailhead 35L';
 renderSections();
 renderSummary();
+updateSectionSelect();
 updateProgress();

@@ -206,17 +206,14 @@
       <label>Destination / Trip Name</label>
       <input type="text" id="s-destination" placeholder="e.g. Vietnam, Iceland, Morocco" maxlength="60">
     </div>
-    <div class="setup-row">
     <div class="setup-field">
       <label>Bag / Kit</label>
       <input type="text" id="s-bag" placeholder="e.g. Kathmandu Trailhead, Cotopaxi Allpa, etc" maxlength="60">
     </div>
     <div class="setup-field">
-      <label>Luggage Size (Estimate)</label>
-      <input type="text" id="s-bag-size" placeholder="e.g. 35L, 40L, 50L" maxlength="60">
+    <label>Weight Goal <span style="color:var(--muted);font-size:10px">(e.g. 7kg carry-on, 23kg check-in)</span></label>
+      <input type="number" id="s-bag-size" placeholder="e.g. 7KG, 23KG" maxlength="60">
     </div>
-    </div>
-
     <div class="setup-row">
       <div class="setup-field">
         <label>Travel Dates / Season</label>
@@ -243,7 +240,7 @@
     </button>
   </div>
 </div>
-<div class="version-badge">Github Dev v0.6.9</div>
+<div class="version-badge">Github Dev v0.7</div>
 
 <!-- ── GENERATING ── -->
 <div id="generating-screen">
@@ -282,11 +279,13 @@
   <div class="progress-bar">
     <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
     <div class="progress-label">
-      <span>Packed <strong id="packedCount">0</strong> of <strong id="totalCount">0</strong> items</span>
+      <span>Packed: <strong id="packedCount">0</strong> of <strong id="totalCount">0</strong> items</span>
       <span id="progressPct" style="color:var(--accent)">0%</span>
-      <span>Weight <strong id="packedWeight">0</strong> of <strong id="totalWeight">0</strong> kg</span>
-      <span id="weightPct" style="color:var(--accent)">0 Grams</span>
     </div>
+    <div class="progress-label">
+      <span>Weight: <strong id="packedWeight">0</strong> of <strong id="totalWeight">0</strong></span>
+      <span id="weightPct" style="color:var(--accent)">0 Grams</span>
+      </div>
   </div>
 
   <div class="notice-bar" id="notice-bar">
@@ -336,6 +335,7 @@
       <div class="add-bar-title">+ Add Item Manually</div>
       <div class="add-bar-row">
         <input class="item-name-input" type="text" id="new-item-name" placeholder="Item name" maxlength="80">
+        <input class="item-name-input" type="number" id="new-item-weight" placeholder="Weight (grams)" maxlength="10">
         <input class="item-note-input" type="text" id="new-item-note" placeholder="Optional note" maxlength="120">
         <select id="new-item-section"><option value="">— Category —</option></select>
         <select id="new-item-badge">
@@ -550,7 +550,7 @@ Return ONLY a JSON object in this exact format:
         {
           "name": "Item name with quantity if helpful e.g. T-shirts x3",
           "note": "Short specific tip for this trip (max 12 words, destination-specific, not generic)",
-          "weight": "estimated weight in grams (e.g. 400)",
+          "weight": "estimated weight in grams (e.g. 400) ONLY return a number here, no units or text, if hireable or buy locally and not packing, set to 0",
           "badge": "key|buy|local|hire"
         }
       ]
@@ -570,7 +570,8 @@ Guidelines:
 - Check the climate and season of the destination and travel dates and adjust clothing/gear recommendations accordingly
 - For hot/humid climates: prioritise lightweight quick-dry fabrics, strong sun/insect protection
 - For adventure activities: include specific gear for those activities unless you can hire locally from rental providers or tour operators
-- Use your knowledge of the supplied bag/kit to tailor recommendations (e.g. if they have a 35L backpack, suggest compact packing strategies and versatile items)
+- Always assume that tour activies will provide basic safety gear (e.g. helmet for motorbiking, wetsuit for diving), and add a hire badge for these items with a note to confirm with the provider 
+- Use your knowledge of the supplied bag/kit to tailor recommendations (e.g. if they have a small backpack, suggest compact packing strategies and versatile items)
 - Estimate the weight of each item and keep the total weight in mind based on the bag capacity/size if provided
 - Be opinionated and practical — give real recommendations not generic placeholders
 - Be cheerful and encouraging in the tone of the item notes, like a knowledgeable friend who's excited for the trip
@@ -600,7 +601,6 @@ function renderHero() {
   let m='';
   if (dates) m+=`<span>📅 <strong>${dates}</strong></span>`;
   if (duration) m+=`<span>⏱ <strong>${duration}</strong></span>`;
-  t.forEach(tag => m+=`<span>📍 <strong>${tag}</strong></span>`);
   document.getElementById('h-meta').innerHTML = m;
   document.title = `${dest} — Pack List`;
 }
@@ -644,14 +644,14 @@ function renderSections() {
 function renderItemHTML(item) {
   const bm = { key:'<span class="badge badge-key">🔥 Key Item</span>', buy:'<span class="badge badge-buy">🛒 To Buy</span>', local:'<span class="badge badge-local">📍 Buy Local</span>', hire:'<span class="badge badge-hire">🤝 Hire</span>' };
   const badge = item.badge ? (bm[item.badge]||'') : '';
+  const weight = item.weight && item.weight != 0 ? `<span class="badge badge-buy">⚖️ ${item.weight}g</span>` : '';
   return `
     <div class="item${item.checked?' checked':''}" id="item-${item.id}">
       <div class="checkbox" onclick="toggleItem('${item.id}')"></div>
       <div class="item-content" onclick="toggleItem('${item.id}')">
         <div class="item-name">${item.name}</div>
         ${item.note?`<div class="item-note">${item.note}</div>`:''}
-        ${badge?`<div class="item-badges">${badge}</div>`:''}
-      </div>
+        ${(badge||weight)?`<div class="item-badges">${badge}${weight}</div>`:''}</div>
       <button class="item-delete" onclick="deleteItem('${item.id}')" title="Remove">✕</button>
     </div>`;
 }
@@ -663,11 +663,11 @@ function updateSectionSelect() {
 }
 
 function addItem() {
-  const n=document.getElementById('new-item-name'), nt=document.getElementById('new-item-note'), se=document.getElementById('new-item-section'), bd=document.getElementById('new-item-badge');
+  const n=document.getElementById('new-item-name'), nt=document.getElementById('new-item-note'), se=document.getElementById('new-item-section'), bd=document.getElementById('new-item-badge'), wt=document.getElementById('new-item-weight');
   const name=n.value.trim(); if(!name){n.focus();return;}
   let sid=se.value; if(!sid&&sections.length>0) sid=sections[0].id;
-  items.push({id:'item-'+Date.now(),sectionId:sid,name,note:nt.value.trim(),badge:bd.value,checked:false});
-  n.value=''; nt.value='';
+  items.push({id:'item-'+Date.now(),sectionId:sid,name,note:nt.value.trim(),badge:bd.value,weight:wt.value.trim(),checked:false});
+  n.value=''; nt.value=''; wt.value='';
   renderSections(); updateProgress(); save();
 }
 
@@ -699,6 +699,33 @@ function updateProgress() {
   document.getElementById('packedCount').textContent=done;
   document.getElementById('totalCount').textContent=total;
   document.getElementById('progressPct').textContent=pct+'%';
+  
+  // Weight progress
+  const toGrams = w => {const n = parseInt(w); return isNaN(n) ? 0 : n;};
+  const totalGrams = items.reduce((sum, i) => sum + toGrams(i.weight), 0);
+  const packedGrams = items.filter(i => i.checked).reduce((sum, i) => sum + toGrams(i.weight), 0);
+  const fmt = g => g >= 1000 ? (g/1000).toFixed(1)+' kg' : g+' g';
+
+  //Weight goal
+  const goalRaw = (tripMeta.capacity || '').toLowerCase().replace('kg', '').trim();
+  const goalGrams = goalRaw ? parseFloat(goalRaw) * 1000 : null;
+  const ratio = goalGrams ? totalGrams / goalGrams : null;
+  const goalColour = !ratio ? 'var(--text)'
+                    : ratio < 0.8 ? 'var(--green)'
+                    : ratio < 1.0 ? 'var(--accent)'
+                    : 'var(--red)';
+
+
+  document.getElementById('packedWeight').textContent=fmt(packedGrams);
+  document.getElementById('totalWeight').textContent  = goalGrams ? fmt(goalGrams) : fmt(totalGrams);
+
+  const weightPct = goalGrams ? Math.round(packedGrams / goalGrams * 100) : 0;
+  const weightPctEl = document.getElementById('weightPct');
+  weightPctEl.textContent = weightPct + '%';
+  weightPctEl.style.color = !goalGrams    ? 'var(--accent)'
+                          : ratio < 0.8   ? 'var(--green)'
+                          : ratio < 1.0   ? 'var(--accent)'
+                          : 'var(--red)';
 }
 
 // ── MODAL ──
