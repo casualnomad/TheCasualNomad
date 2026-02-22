@@ -491,8 +491,18 @@ async function generateList() {
     }
 
     const data = await response.json();
-    const raw = data.result.replace(/```json|```/g,'').trim();
-    const parsed = JSON.parse(raw);
+    const raw = data.result
+        .replace(/```json|```/g, '')  // strip code fences
+        .replace(/^[^{]*/s, '')       // strip anything before the first {
+        .replace(/[^}]*$/s, '')       // strip anything after the last }
+        .trim();
+
+      let parsed;
+      try {
+        parsed = JSON.parse(raw);
+      } catch(e) {
+        throw new Error('AI returned malformed JSON — please try generating again');
+      }
 
     advanceStep(5);
     await new Promise(r => setTimeout(r, 700));
