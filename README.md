@@ -2,7 +2,7 @@
 
 An AI-powered packing list generator for travellers. Describe your trip, and Claude AI builds a tailored, categorised packing list — with per-item weights, destination-specific tips, and smart badges for what to buy before you go, hire locally, or prioritise.
 
-Site is [live right here](https://thecausalnomad.xyz), give it a try.
+Site is [live right here](https://thecasualnomad.xyz), give it a try.
 
 ---
 
