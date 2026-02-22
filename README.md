@@ -50,7 +50,7 @@ This app relies on a Cloudflare Worker to communicate with Claude AI. Follow the
 3. **Update the Worker URL:**
    - In `index.html`, find this line:
      ```javascript
-     const WORKER_URL = 'https://cold-hat-479c.github-0b8.workers.dev';
+     const WORKER_URL = '';
      ```
    - Replace it with your Worker's URL (found in the Cloudflare dashboard)
 
