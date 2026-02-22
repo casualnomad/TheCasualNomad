@@ -479,9 +479,7 @@ async function generateList() {
 
   try {
     // 👇 Replace this URL with your Cloudflare Worker URL after deploying it
-    const WORKER_URL = 'https://cold-hat-479c.github-0b8.workers.dev';
-
-    const response = await fetch(WORKER_URL, {
+      const response = await fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt: buildPrompt(tripMeta) })
