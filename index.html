@@ -842,17 +842,17 @@ function processCSV(file) {
   const reader = new FileReader();
   reader.onload = function(e) {
     try {
-      const allLines = e.target.result.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      const rawText = e.target.result.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      const allLines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
       if (allLines.length < 2) { showImportError('CSV appears to be empty.'); return; }
 
-      // Extract # meta lines and data lines separately
-      const metaLines = allLines.filter(l => l.startsWith('#'));
-      const dataLines = allLines.filter(l => !l.startsWith('#'));
+      const isMetaLine = l => l.startsWith('#') || l.startsWith('"#');
+      const metaLines = allLines.filter(isMetaLine);
+      const dataLines = allLines.filter(l => !isMetaLine(l));
 
-      // Parse trip meta from comment lines
       const parseMeta = (key) => {
-        const line = metaLines.find(l => l.startsWith(`# ${key}:`));
-        return line ? line.slice(`# ${key}:`.length).trim() : '';
+        const line = metaLines.find(l => l.replace(/^"|"$/g,'').startsWith(`# ${key}:`));
+        return line ? line.replace(/^"|"$/g,'').slice(`# ${key}:`.length).trim() : '';
       };
       const importedMeta = {
         dest:       parseMeta('dest'),
@@ -864,15 +864,13 @@ function processCSV(file) {
         extra:      parseMeta('extra'),
       };
 
-      // Fall back to filename if no dest in meta
       if (!importedMeta.dest) {
         importedMeta.dest = file.name.replace(/-packing-list\.csv$/i,'').replace(/[-_]/g,' ') || 'Imported Trip';
       }
 
       if (dataLines.length < 2) { showImportError('CSV appears to be empty.'); return; }
 
-      // Parse header row to find column indices
-      const headers = parseCSVRow(dataLines[0]).map(h => h.toLowerCase().trim());
+      const headers = parseCSVRow(dataLines[0]).map(h => h.toLowerCase().trim().replace(/^"|"$/g, ''));
       const col = (name) => headers.indexOf(name);
       const iCat    = col('category');
       const iIcon   = col('icon');
@@ -887,19 +885,17 @@ function processCSV(file) {
         return;
       }
 
-      // Build sections and items from CSV rows
       const importedSections = [];
       const importedItems = [];
-      const sectionMap = {}; // name → id
+      const sectionMap = {};
 
       dataLines.slice(1).forEach((line, idx) => {
         const cols = parseCSVRow(line);
-        const catName = (cols[iCat] || '').trim();
-        const catIcon = iIcon !== -1 ? (cols[iIcon] || '📦').trim() : '📦';
+        const catName  = (cols[iCat]  || '').trim();
+        const catIcon  = iIcon !== -1 ? (cols[iIcon] || '📦').trim() : '📦';
         const itemName = (cols[iItem] || '').trim();
         if (!itemName) return;
 
-        // Create section if we haven't seen it
         if (!sectionMap[catName]) {
           const secId = 'sec-import-' + Object.keys(sectionMap).length;
           sectionMap[catName] = secId;
@@ -910,16 +906,15 @@ function processCSV(file) {
           id: 'item-import-' + idx,
           sectionId: sectionMap[catName],
           name: itemName,
-          note:    iNote   !== -1 ? (cols[iNote]   || '') : '',
-          badge:   iBadge  !== -1 ? (cols[iBadge]  || '') : '',
-          weight:  iWeight !== -1 ? (cols[iWeight]  || '0').replace(/[^\d]/g,'') || '0' : '0',
-          checked: iPacked !== -1 ? (cols[iPacked]  || '').toLowerCase() === 'yes' : false
+          note:    iNote   !== -1 ? (cols[iNote]  || '') : '',
+          badge:   iBadge  !== -1 ? (cols[iBadge] || '') : '',
+          weight:  iWeight !== -1 ? (cols[iWeight] || '0').replace(/[^\d]/g,'') || '0' : '0',
+          checked: iPacked !== -1 ? (cols[iPacked] || '').toLowerCase() === 'yes' : false
         });
       });
 
       if (importedItems.length === 0) { showImportError('No items found in the CSV.'); return; }
 
-      // Load into app state
       tripMeta = importedMeta;
       tripSummary = {};
       sections = importedSections;
