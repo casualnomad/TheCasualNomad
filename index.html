@@ -748,16 +748,17 @@ function updateProgress() {
 
 function exportCSV() {
   // Trip meta header lines (prefixed with # so standard CSV parsers skip them)
-  const metaLines = [
-    `# Casual Nomad Export`,
-    `# dest: ${tripMeta.dest || ''}`,
-    `# bag: ${tripMeta.bag || ''}`,
-    `# capacity: ${tripMeta.capacity || ''}`,
-    `# dates: ${tripMeta.dates || ''}`,
-    `# duration: ${tripMeta.duration || ''}`,
-    `# activities: ${tripMeta.activities || ''}`,
-    `# extra: ${tripMeta.extra || ''}`,
-  ];
+ const cleanMeta = v => (v || '').replace(/[\r\n]+/g, ' ').trim();
+ const metaLines = [
+  `# Casual Nomad Export`,
+  `# dest: ${cleanMeta(tripMeta.dest)}`,
+  `# bag: ${cleanMeta(tripMeta.bag)}`,
+  `# capacity: ${cleanMeta(tripMeta.capacity)}`,
+  `# dates: ${cleanMeta(tripMeta.dates)}`,
+  `# duration: ${cleanMeta(tripMeta.duration)}`,
+  `# activities: ${cleanMeta(tripMeta.activities)}`,
+  `# extra: ${cleanMeta(tripMeta.extra)}`,
+];
 
   const headers = ['Category', 'Icon', 'Item', 'Note', 'Badge', 'Weight (g)', 'Packed'];
   const rows = items.map(item => {
