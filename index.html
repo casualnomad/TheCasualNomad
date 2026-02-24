@@ -201,7 +201,7 @@
     <div class="setup-logo">🎒 PACKING LIST 👜</div>
     <div class="setup-sub">AI-powered trip planning</div>
     <div class="ai-badge">✦ Powered by Claude AI</div>
-    <a  class="ai-badge" href="https://github.com/casualnomad/TheCasualNomad">Github %%ENV%% v1.3</a>
+    <a  class="ai-badge" href="https://github.com/casualnomad/TheCasualNomad">Github %%ENV%% v1.5</a>
 
     <div class="setup-field">
       <label>Destination / Trip Type</label>
@@ -239,6 +239,20 @@
     <button class="btn" style="width:100%;margin-top:8px;font-size:14px" onclick="generateList()" id="generate-btn">
       ✦ Generate My Packing List
     </button>
+
+    <div style="display:flex;align-items:center;gap:12px;margin:24px 0 16px">
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+      <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase">or import</span>
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+    </div>
+
+    <div id="import-drop-zone" style="border:1px dashed var(--border);border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:all 0.2s;" onclick="document.getElementById('csv-file-input').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+      <div style="font-size:22px;margin-bottom:8px">📥</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)">Drop a CSV or click to import</div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-top:4px;opacity:0.6">Import a previously exported packing list</div>
+      <input type="file" id="csv-file-input" accept=".csv" style="display:none" onchange="handleFileSelect(event)">
+    </div>
+    <div id="import-error" style="display:none;margin-top:10px;background:rgba(232,79,79,0.08);border:1px solid rgba(232,79,79,0.3);border-radius:6px;padding:10px 14px;font-family:'DM Mono',monospace;font-size:11px;color:#f87171;line-height:1.6"></div>
   </div>
 </div>
 
@@ -733,19 +747,34 @@ function updateProgress() {
 // --CSV Export --
 
 function exportCSV() {
-  const headers = ['Category', 'Item', 'Note', 'Weight (g)', 'Packed'];
+  // Trip meta header lines (prefixed with # so standard CSV parsers skip them)
+ const cleanMeta = v => (v || '').replace(/[\r\n]+/g, ' ').trim();
+ const metaLines = [
+  `# Casual Nomad Export`,
+  `# dest: ${cleanMeta(tripMeta.dest)}`,
+  `# bag: ${cleanMeta(tripMeta.bag)}`,
+  `# capacity: ${cleanMeta(tripMeta.capacity)}`,
+  `# dates: ${cleanMeta(tripMeta.dates)}`,
+  `# duration: ${cleanMeta(tripMeta.duration)}`,
+  `# activities: ${cleanMeta(tripMeta.activities)}`,
+  `# extra: ${cleanMeta(tripMeta.extra)}`,
+];
+
+  const headers = ['Category', 'Icon', 'Item', 'Note', 'Badge', 'Weight (g)', 'Packed'];
   const rows = items.map(item => {
     const section = sections.find(s => s.id === item.sectionId);
     return [
       section ? section.name : '',
+      section ? section.icon : '',
       item.name,
       item.note || '',
+      item.badge || '',
       item.weight || 0,
       item.checked ? 'Yes' : 'No'
     ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
   });
 
-  const csv = [headers.join(','), ...rows].join('\n');
+  const csv = [...metaLines, headers.join(','), ...rows].join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -772,6 +801,155 @@ function confirmAddSection() {
 }
 function openAddItem() {
   document.getElementById('add-bar').style.display='block';
+}
+
+// ── CSV IMPORT ──
+function handleDragOver(e) {
+  e.preventDefault();
+  const zone = document.getElementById('import-drop-zone');
+  zone.style.borderColor = 'var(--accent)';
+  zone.style.background = 'rgba(244,166,34,0.04)';
+}
+function handleDragLeave(e) {
+  const zone = document.getElementById('import-drop-zone');
+  zone.style.borderColor = '';
+  zone.style.background = '';
+}
+function handleDrop(e) {
+  e.preventDefault();
+  handleDragLeave(e);
+  const file = e.dataTransfer.files[0];
+  if (file) processCSV(file);
+}
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) processCSV(file);
+  e.target.value = ''; // reset so same file can be re-selected
+}
+
+function showImportError(msg) {
+  const el = document.getElementById('import-error');
+  el.style.display = 'block';
+  el.innerHTML = `<strong>Import failed:</strong> ${msg}`;
+}
+function clearImportError() {
+  document.getElementById('import-error').style.display = 'none';
+}
+
+function processCSV(file) {
+  clearImportError();
+  if (!file.name.endsWith('.csv')) { showImportError('Please select a .csv file.'); return; }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const rawText = e.target.result.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      const allLines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      if (allLines.length < 2) { showImportError('CSV appears to be empty.'); return; }
+
+      const isMetaLine = l => l.startsWith('#') || l.startsWith('"#');
+      const metaLines = allLines.filter(isMetaLine);
+      const dataLines = allLines.filter(l => !isMetaLine(l));
+
+      const parseMeta = (key) => {
+        const line = metaLines.find(l => l.replace(/^"|"$/g,'').startsWith(`# ${key}:`));
+        return line ? line.replace(/^"|"$/g,'').slice(`# ${key}:`.length).trim() : '';
+      };
+      const importedMeta = {
+        dest:       parseMeta('dest'),
+        bag:        parseMeta('bag'),
+        capacity:   parseMeta('capacity'),
+        dates:      parseMeta('dates'),
+        duration:   parseMeta('duration'),
+        activities: parseMeta('activities'),
+        extra:      parseMeta('extra'),
+      };
+
+      if (!importedMeta.dest) {
+        importedMeta.dest = file.name.replace(/-packing-list\.csv$/i,'').replace(/[-_]/g,' ') || 'Imported Trip';
+      }
+
+      if (dataLines.length < 2) { showImportError('CSV appears to be empty.'); return; }
+
+      const headers = parseCSVRow(dataLines[0]).map(h => h.toLowerCase().trim().replace(/^"|"$/g, ''));
+      const col = (name) => headers.indexOf(name);
+      const iCat    = col('category');
+      const iIcon   = col('icon');
+      const iItem   = col('item');
+      const iNote   = col('note');
+      const iBadge  = col('badge');
+      const iWeight = col('weight (g)');
+      const iPacked = col('packed');
+
+      if (iCat === -1 || iItem === -1) {
+        showImportError('CSV must have at least "Category" and "Item" columns. Make sure you\'re importing an exported packing list.');
+        return;
+      }
+
+      const importedSections = [];
+      const importedItems = [];
+      const sectionMap = {};
+
+      dataLines.slice(1).forEach((line, idx) => {
+        const cols = parseCSVRow(line);
+        const catName  = (cols[iCat]  || '').trim();
+        const catIcon  = iIcon !== -1 ? (cols[iIcon] || '📦').trim() : '📦';
+        const itemName = (cols[iItem] || '').trim();
+        if (!itemName) return;
+
+        if (!sectionMap[catName]) {
+          const secId = 'sec-import-' + Object.keys(sectionMap).length;
+          sectionMap[catName] = secId;
+          importedSections.push({ id: secId, name: catName, icon: catIcon });
+        }
+
+        importedItems.push({
+          id: 'item-import-' + idx,
+          sectionId: sectionMap[catName],
+          name: itemName,
+          note:    iNote   !== -1 ? (cols[iNote]  || '') : '',
+          badge:   iBadge  !== -1 ? (cols[iBadge] || '') : '',
+          weight:  iWeight !== -1 ? (cols[iWeight] || '0').replace(/[^\d]/g,'') || '0' : '0',
+          checked: iPacked !== -1 ? (cols[iPacked] || '').toLowerCase() === 'yes' : false
+        });
+      });
+
+      if (importedItems.length === 0) { showImportError('No items found in the CSV.'); return; }
+
+      tripMeta = importedMeta;
+      tripSummary = {};
+      sections = importedSections;
+      items = importedItems;
+
+      save();
+      renderHero(); renderSummary(); renderSections(); updateSectionSelect(); updateProgress();
+      show('app');
+
+    } catch(err) {
+      showImportError('Could not parse the CSV file. ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function parseCSVRow(row) {
+  // Handles quoted fields (including commas inside quotes)
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < row.length; i++) {
+    const ch = row[i];
+    if (ch === '"') {
+      if (inQuotes && row[i+1] === '"') { current += '"'; i++; } // escaped quote
+      else { inQuotes = !inQuotes; }
+    } else if (ch === ',' && !inQuotes) {
+      result.push(current); current = '';
+    } else {
+      current += ch;
+    }
+  }
+  result.push(current);
+  return result;
 }
 </script>
 </body>
