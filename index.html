@@ -190,9 +190,46 @@
     .summary-item { border-right: none; border-bottom: 1px solid var(--border); }
     .summary-item:last-child { border-bottom: none; }
   }
+
+  /* ── AUTH BAR ── */
+  .auth-bar { position: fixed; top: 12px; right: 16px; z-index: 50; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.5px; color: var(--muted); display: flex; align-items: center; gap: 10px; }
+  .auth-bar a { color: var(--muted); text-decoration: none; cursor: pointer; transition: color 0.15s; }
+  .auth-bar a:hover { color: var(--accent); }
+  .auth-bar .auth-sep { color: var(--border); }
+
+  /* ── MY TRIPS SCREEN ── */
+  #trips-screen { min-height: 100vh; padding: 64px 20px 40px; background: radial-gradient(ellipse at 30% 20%, rgba(244,166,34,0.06) 0%, transparent 60%); }
+  .trips-wrap { max-width: 760px; margin: 0 auto; }
+  .trips-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+  .trips-page-title { font-family: 'Bebas Neue', sans-serif; font-size: 42px; letter-spacing: 3px; }
+  .trips-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .trip-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; transition: border-color 0.15s; }
+  .trip-card:hover { border-color: rgba(244,166,34,0.3); }
+  .trip-card-dest { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; margin-bottom: 6px; }
+  .trip-card-meta { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); line-height: 1.8; margin-bottom: 16px; }
+  .trip-card-actions { display: flex; gap: 8px; }
+  .trips-empty { text-align: center; padding: 60px 20px; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 12px; letter-spacing: 1px; }
+  .trips-empty-icon { font-size: 36px; margin-bottom: 12px; }
+
+  /* Auth modal */
+  .auth-modal-desc { font-size: 13px; color: var(--muted); margin-bottom: 20px; line-height: 1.6; }
+  .auth-email-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 10px 14px; outline: none; margin-bottom: 16px; transition: border-color 0.15s; }
+  .auth-email-input:focus { border-color: var(--accent); }
+  .auth-msg-error { background: rgba(232,79,79,0.08); border: 1px solid rgba(232,79,79,0.3); border-radius: 6px; padding: 10px 14px; font-family: 'DM Mono', monospace; font-size: 11px; color: #f87171; margin-bottom: 14px; display: none; }
+  .auth-check-email { text-align: center; padding: 12px 0; }
+  .auth-check-icon { font-size: 36px; margin-bottom: 12px; }
+  .auth-check-email p { font-size: 13px; color: var(--muted); line-height: 1.7; }
+  .auth-check-email strong { color: var(--text); }
 </style>
 </head>
 <body>
+
+<!-- ── AUTH BAR ── -->
+<div class="auth-bar" id="auth-bar">
+  <span id="auth-bar-content">
+    <a onclick="openAuthModal()">Sign in to save trips</a>
+  </span>
+</div>
 
 <!-- ── SETUP ── -->
 <div id="setup-screen">
@@ -239,6 +276,9 @@
     <button class="btn" style="width:100%;margin-top:8px;font-size:14px" onclick="generateList()" id="generate-btn">
       ✦ Generate My Packing List
     </button>
+    <div id="setup-trips-link" style="display:none;text-align:center;margin-top:14px;font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)">
+      <a onclick="loadTrips()" style="color:var(--accent);cursor:pointer;text-decoration:none">☰ View my saved trips</a>
+    </div>
 
     <div style="display:flex;align-items:center;gap:12px;margin:24px 0 16px">
       <div style="flex:1;height:1px;background:var(--border)"></div>
@@ -286,6 +326,7 @@
         <!-- <button class="btn btn-outline btn-sm" onclick="editTrip()">✏ Edit Details</button> -->
         <button class="btn btn-outline btn-sm" onclick="regenList()" style="color:var(--accent);border-color:rgba(244,166,34,0.3)">✦ Regenerate</button>
         <button class="btn btn-outline btn-sm" onclick="startFresh()" style="color:var(--red);border-color:rgba(232,79,79,0.4)">✕ Start Fresh</button>
+        <button class="btn btn-outline btn-sm" id="my-trips-hero-btn" style="display:none" onclick="loadTrips()">☰ My Trips</button>
       </div>
     </div>
     <div class="hero-bg-text" id="h-bg-text"></div>
@@ -387,15 +428,62 @@
   </div>
 </div>
 
+<!-- ── AUTH MODAL ── -->
+<div class="modal-overlay" id="auth-modal">
+  <div class="modal">
+    <div id="auth-signin-view">
+      <h3>Sign In</h3>
+      <p class="auth-modal-desc">Enter your email and we'll send a magic sign-in link. No password needed.</p>
+      <div class="auth-msg-error" id="auth-error"></div>
+      <input class="auth-email-input" type="email" id="auth-email" placeholder="you@example.com" onkeydown="if(event.key==='Enter')requestMagicLink()">
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeAuthModal()">Cancel</button>
+        <button class="btn" id="auth-send-btn" onclick="requestMagicLink()">Send Magic Link</button>
+      </div>
+    </div>
+    <div id="auth-check-view" style="display:none">
+      <div class="auth-check-email">
+        <div class="auth-check-icon">📬</div>
+        <h3 style="margin-bottom:12px">Check Your Inbox</h3>
+        <p>We sent a sign-in link to<br><strong id="auth-sent-to"></strong><br>Click it to sign in — expires in 15 minutes.</p>
+      </div>
+      <div class="modal-actions" style="justify-content:center;margin-top:24px">
+        <button class="btn btn-outline" onclick="closeAuthModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MY TRIPS SCREEN ── -->
+<div id="trips-screen" style="display:none">
+  <div class="trips-wrap">
+    <div class="trips-header">
+      <div class="trips-page-title">My Trips</div>
+      <button class="btn btn-sm" onclick="show('setup-screen')">+ New Trip</button>
+    </div>
+    <div class="trips-grid" id="trips-grid"></div>
+  </div>
+</div>
+
 <script>
 const EMOJIS = ['👕','🧥','👟','👜','📱','💊','📄','🏕️','🧴','🔦','⚡','🎒','🛏️','📦','🍽️','💰','📷','🗺️','🧳','🎿','🏊','🚴','🏔️','🌊','🎧','💻','🔑','🪥','🩹','🧢','☀️','🕶️','🔋','🗝️','🩺'];
 const STORAGE_KEY = 'packListData_v2';
 
 let sections = [], items = [], tripMeta = {}, tripSummary = {}, selectedEmoji = '📦';
+let currentUser = null;   // {email} when signed in, null otherwise
+let currentTripId = null; // UUID of active trip in D1 when signed in
 
 // ── STORAGE ──
 function save() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ tripMeta, tripSummary, sections, items })); } catch(e) {}
+  // Fire-and-forget sync to server — never blocks UI
+  if (currentUser && currentTripId) {
+    fetch(`/api/trips/${currentTripId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dest: tripMeta.dest || 'Trip', data: { tripMeta, tripSummary, sections, items } })
+    }).catch(() => {});
+  }
 }
 function loadSaved() {
   try {
@@ -414,6 +502,7 @@ function show(id) {
   document.getElementById('setup-screen').style.display     = id === 'setup-screen'     ? 'flex'  : 'none';
   document.getElementById('generating-screen').style.display= id === 'generating-screen' ? 'flex'  : 'none';
   document.getElementById('app').style.display              = id === 'app'               ? 'block' : 'none';
+  document.getElementById('trips-screen').style.display     = id === 'trips-screen'     ? 'block' : 'none';
 }
 
 // ── BOOT ──
@@ -425,7 +514,13 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('new-item-name').addEventListener('keydown', e => { if (e.key==='Enter') addItem(); });
   document.getElementById('new-section-name').addEventListener('keydown', e => { if(e.key==='Enter') confirmAddSection(); if(e.key==='Escape') closeAddSection(); });
   document.getElementById('sectionModal').addEventListener('click', e => { if(e.target===document.getElementById('sectionModal')) closeAddSection(); });
+  document.getElementById('auth-modal').addEventListener('click', e => { if(e.target===document.getElementById('auth-modal')) closeAuthModal(); });
 
+  // Check if user is already signed in
+  fetch('/api/auth/me')
+    .then(r => r.ok ? r.json() : null)
+    .then(user => { if (user) { currentUser = user; updateAuthUI(); } })
+    .catch(() => {});
 });
 
 // ── NOTICE ──
@@ -456,7 +551,7 @@ function editTrip() {
 
 function startFresh() {
   if (!confirm('Clear everything and start a new list?')) return;
-  clearSaved(); sections=[]; items=[]; tripMeta={}; tripSummary={};
+  clearSaved(); sections=[]; items=[]; tripMeta={}; tripSummary={}; currentTripId=null;
   ['s-destination','s-bag','s-dates','s-duration','s-activities','s-extra','s-bag-size'].forEach(id => document.getElementById(id).value = '');
   show('setup-screen');
 }
@@ -534,6 +629,16 @@ async function generateList() {
     save();
     renderHero(); renderSummary(); renderSections(); updateSectionSelect(); updateProgress();
     show('app');
+
+    // If signed in, create a new server-side trip
+    if (currentUser) {
+      currentTripId = null; // reset before creating
+      fetch('/api/trips', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dest: tripMeta.dest || 'Trip', data: { tripMeta, tripSummary, sections, items } })
+      }).then(r => r.json()).then(d => { if (d.id) currentTripId = d.id; }).catch(() => {});
+    }
 
   } catch(err) {
     const errEl = document.getElementById('gen-error');
@@ -950,6 +1055,135 @@ function parseCSVRow(row) {
   }
   result.push(current);
   return result;
+}
+
+// ── AUTH ──
+function updateAuthUI() {
+  const bar = document.getElementById('auth-bar-content');
+  const myTripsBtn = document.getElementById('my-trips-hero-btn');
+  const setupLink = document.getElementById('setup-trips-link');
+  if (currentUser) {
+    bar.innerHTML = `<a onclick="loadTrips()">My Trips</a><span class="auth-sep">·</span><a onclick="signOut()">${currentUser.email}</a>`;
+    if (myTripsBtn) myTripsBtn.style.display = 'inline-flex';
+    if (setupLink) setupLink.style.display = 'block';
+  } else {
+    bar.innerHTML = `<a onclick="openAuthModal()">Sign in to save trips</a>`;
+    if (myTripsBtn) myTripsBtn.style.display = 'none';
+    if (setupLink) setupLink.style.display = 'none';
+  }
+}
+
+function openAuthModal() {
+  document.getElementById('auth-signin-view').style.display = 'block';
+  document.getElementById('auth-check-view').style.display = 'none';
+  document.getElementById('auth-email').value = '';
+  document.getElementById('auth-error').style.display = 'none';
+  document.getElementById('auth-modal').classList.add('open');
+  setTimeout(() => document.getElementById('auth-email').focus(), 100);
+}
+
+function closeAuthModal() {
+  document.getElementById('auth-modal').classList.remove('open');
+}
+
+async function requestMagicLink() {
+  const email = document.getElementById('auth-email').value.trim();
+  const errEl = document.getElementById('auth-error');
+  const btn = document.getElementById('auth-send-btn');
+  errEl.style.display = 'none';
+  if (!email) { document.getElementById('auth-email').focus(); return; }
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  try {
+    const res = await fetch('/api/auth/request-link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to send email');
+    document.getElementById('auth-sent-to').textContent = email;
+    document.getElementById('auth-signin-view').style.display = 'none';
+    document.getElementById('auth-check-view').style.display = 'block';
+  } catch(err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Send Magic Link';
+  }
+}
+
+async function signOut() {
+  await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+  currentUser = null;
+  currentTripId = null;
+  updateAuthUI();
+}
+
+// ── MY TRIPS ──
+async function loadTrips() {
+  if (!currentUser) { openAuthModal(); return; }
+  show('trips-screen');
+  const grid = document.getElementById('trips-grid');
+  grid.innerHTML = '<div class="trips-empty"><div class="trips-empty-icon">⏳</div>Loading your trips…</div>';
+  try {
+    const res = await fetch('/api/trips');
+    if (!res.ok) throw new Error('Failed to load trips');
+    const trips = await res.json();
+    if (trips.length === 0) {
+      grid.innerHTML = '<div class="trips-empty"><div class="trips-empty-icon">🗺️</div>No saved trips yet.<br>Generate a new list to get started.</div>';
+      return;
+    }
+    grid.innerHTML = trips.map(t => {
+      const updated = new Date(t.updated_at * 1000).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+      return `<div class="trip-card" id="tripcard-${t.id}">
+        <div class="trip-card-dest">${t.dest}</div>
+        <div class="trip-card-meta">Last updated: ${updated}</div>
+        <div class="trip-card-actions">
+          <button class="btn btn-sm" onclick="loadTrip('${t.id}')">Load</button>
+          <button class="btn btn-outline btn-sm" style="color:var(--red);border-color:rgba(232,79,79,0.4)" onclick="deleteTrip('${t.id}')">Delete</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(err) {
+    grid.innerHTML = `<div class="trips-empty"><div class="trips-empty-icon">⚠️</div>${err.message}</div>`;
+  }
+}
+
+async function loadTrip(id) {
+  try {
+    const res = await fetch(`/api/trips/${id}`);
+    if (!res.ok) throw new Error('Could not load trip');
+    const data = await res.json();
+    tripMeta = data.tripMeta || {};
+    tripSummary = data.tripSummary || {};
+    sections = data.sections || [];
+    items = data.items || [];
+    currentTripId = id;
+    save();
+    renderHero(); renderSummary(); renderSections(); updateSectionSelect(); updateProgress();
+    show('app');
+  } catch(err) {
+    alert('Failed to load trip: ' + err.message);
+  }
+}
+
+async function deleteTrip(id) {
+  if (!confirm('Delete this trip from your account?')) return;
+  try {
+    const res = await fetch(`/api/trips/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Delete failed');
+    const card = document.getElementById('tripcard-' + id);
+    if (card) card.remove();
+    if (currentTripId === id) currentTripId = null;
+    // Show empty state if no cards remain
+    if (document.getElementById('trips-grid').children.length === 0) {
+      document.getElementById('trips-grid').innerHTML = '<div class="trips-empty"><div class="trips-empty-icon">🗺️</div>No saved trips yet.<br>Generate a new list to get started.</div>';
+    }
+  } catch(err) {
+    alert('Could not delete trip: ' + err.message);
+  }
 }
 </script>
 </body>

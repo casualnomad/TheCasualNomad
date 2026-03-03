@@ -1,3 +1,5 @@
 GIT.code-workspace
-.DS_Store
+*.DS_Store
 dummy.data
+.claude
+*.sql
