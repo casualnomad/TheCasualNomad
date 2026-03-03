@@ -61,7 +61,7 @@ export async function onRequestGet(context) {
   return new Response(null, {
     status: 302,
     headers: {
-      'Location': '/',
+      'Location': `/?_auth=${encodeURIComponent(email)}`,
       'Set-Cookie': `session=${sessionId}; ${cookieFlags}`
     }
   });

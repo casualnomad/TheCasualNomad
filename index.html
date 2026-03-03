@@ -326,6 +326,7 @@
         <!-- <button class="btn btn-outline btn-sm" onclick="editTrip()">✏ Edit Details</button> -->
         <button class="btn btn-outline btn-sm" onclick="regenList()" style="color:var(--accent);border-color:rgba(244,166,34,0.3)">✦ Regenerate</button>
         <button class="btn btn-outline btn-sm" onclick="startFresh()" style="color:var(--red);border-color:rgba(232,79,79,0.4)">✕ Start Fresh</button>
+        <button class="btn btn-outline btn-sm" id="save-trip-btn" style="display:none;color:var(--green);border-color:rgba(78,203,113,0.3)" onclick="saveTrip()">↑ Save Trip</button>
         <button class="btn btn-outline btn-sm" id="my-trips-hero-btn" style="display:none" onclick="loadTrips()">☰ My Trips</button>
       </div>
     </div>
@@ -516,11 +517,22 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('sectionModal').addEventListener('click', e => { if(e.target===document.getElementById('sectionModal')) closeAddSection(); });
   document.getElementById('auth-modal').addEventListener('click', e => { if(e.target===document.getElementById('auth-modal')) closeAuthModal(); });
 
-  // Check if user is already signed in
-  fetch('/api/auth/me')
-    .then(r => r.ok ? r.json() : null)
-    .then(user => { if (user) { currentUser = user; updateAuthUI(); } })
-    .catch(() => {});
+  // If arriving from magic link, email is in ?_auth param — no server round-trip needed
+  const _authParam = new URLSearchParams(window.location.search).get('_auth');
+  if (_authParam) {
+    currentUser = { email: _authParam };
+    updateAuthUI();
+    history.replaceState({}, '', '/');
+    // Verify session in background; roll back if cookie wasn't set
+    fetch('/api/auth/me').then(r => r.ok ? r.json() : null)
+      .then(user => { if (!user) { currentUser = null; currentTripId = null; updateAuthUI(); } })
+      .catch(() => {});
+  } else {
+    fetch('/api/auth/me')
+      .then(r => r.ok ? r.json() : null)
+      .then(user => { if (user) { currentUser = user; updateAuthUI(); } })
+      .catch(() => {});
+  }
 });
 
 // ── NOTICE ──
@@ -1061,14 +1073,17 @@ function parseCSVRow(row) {
 function updateAuthUI() {
   const bar = document.getElementById('auth-bar-content');
   const myTripsBtn = document.getElementById('my-trips-hero-btn');
+  const saveTripBtn = document.getElementById('save-trip-btn');
   const setupLink = document.getElementById('setup-trips-link');
   if (currentUser) {
-    bar.innerHTML = `<a onclick="loadTrips()">My Trips</a><span class="auth-sep">·</span><a onclick="signOut()">${currentUser.email}</a>`;
+    bar.innerHTML = `<a onclick="loadTrips()">My Trips</a><span class="auth-sep">·</span><span>${currentUser.email}</span><span class="auth-sep">·</span><a onclick="signOut()">Sign out</a>`;
     if (myTripsBtn) myTripsBtn.style.display = 'inline-flex';
+    if (saveTripBtn) saveTripBtn.style.display = 'inline-flex';
     if (setupLink) setupLink.style.display = 'block';
   } else {
     bar.innerHTML = `<a onclick="openAuthModal()">Sign in to save trips</a>`;
     if (myTripsBtn) myTripsBtn.style.display = 'none';
+    if (saveTripBtn) saveTripBtn.style.display = 'none';
     if (setupLink) setupLink.style.display = 'none';
   }
 }
@@ -1119,6 +1134,36 @@ async function signOut() {
   currentUser = null;
   currentTripId = null;
   updateAuthUI();
+}
+
+async function saveTrip() {
+  if (!currentUser) { openAuthModal(); return; }
+  const btn = document.getElementById('save-trip-btn');
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  try {
+    if (currentTripId) {
+      await fetch(`/api/trips/${currentTripId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dest: tripMeta.dest || 'Trip', data: { tripMeta, tripSummary, sections, items } })
+      });
+    } else {
+      const res = await fetch('/api/trips', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dest: tripMeta.dest || 'Trip', data: { tripMeta, tripSummary, sections, items } })
+      });
+      const d = await res.json();
+      if (d.id) currentTripId = d.id;
+    }
+    btn.textContent = '✓ Saved';
+    setTimeout(() => { btn.disabled = false; btn.textContent = orig; }, 2000);
+  } catch {
+    btn.textContent = '✗ Failed';
+    setTimeout(() => { btn.disabled = false; btn.textContent = orig; }, 2000);
+  }
 }
 
 // ── MY TRIPS ──
