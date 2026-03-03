@@ -192,10 +192,17 @@
   }
 
   /* ── AUTH BAR ── */
-  .auth-bar { position: fixed; top: 12px; right: 16px; z-index: 50; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.5px; color: var(--muted); display: flex; align-items: center; gap: 10px; }
-  .auth-bar a { color: var(--muted); text-decoration: none; cursor: pointer; transition: color 0.15s; }
-  .auth-bar a:hover { color: var(--accent); }
-  .auth-bar .auth-sep { color: var(--border); }
+  .auth-bar { position: fixed; top: 14px; right: 16px; z-index: 50; }
+  .auth-sign-in { display: inline-flex; align-items: center; gap: 6px; background: rgba(244,166,34,0.08); border: 1px solid rgba(244,166,34,0.22); color: var(--accent); font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; padding: 6px 13px; border-radius: 4px; cursor: pointer; text-decoration: none; transition: background 0.2s, border-color 0.2s; }
+  .auth-sign-in:hover { background: rgba(244,166,34,0.16); border-color: rgba(244,166,34,0.45); }
+  .auth-pill { display: inline-flex; align-items: stretch; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; font-family: 'DM Mono', monospace; font-size: 11px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+  .auth-pill-email { padding: 7px 12px; color: var(--muted); letter-spacing: 0.3px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; border-right: 1px solid var(--border); }
+  .auth-pill-link { padding: 7px 12px; color: var(--accent); text-decoration: none; cursor: pointer; transition: background 0.15s; letter-spacing: 0.5px; white-space: nowrap; display: flex; align-items: center; }
+  .auth-pill-link:hover { background: rgba(244,166,34,0.1); }
+  .auth-pill-divider { width: 1px; background: var(--border); flex-shrink: 0; }
+  .auth-pill-signout { padding: 7px 11px; color: var(--muted); text-decoration: none; cursor: pointer; transition: background 0.15s, color 0.15s; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; white-space: nowrap; display: flex; align-items: center; }
+  .auth-pill-signout:hover { background: rgba(232,79,79,0.1); color: var(--red); }
+  @media (max-width: 600px) { .auth-pill-email { max-width: 100px; } .auth-bar { top: 10px; right: 10px; } }
 
   /* ── MY TRIPS SCREEN ── */
   #trips-screen { min-height: 100vh; padding: 64px 20px 40px; background: radial-gradient(ellipse at 30% 20%, rgba(244,166,34,0.06) 0%, transparent 60%); }
@@ -238,7 +245,7 @@
     <div class="setup-logo">🎒 PACKING LIST 👜</div>
     <div class="setup-sub">AI-powered trip planning</div>
     <div class="ai-badge">✦ Powered by Claude AI</div>
-    <a  class="ai-badge" href="https://github.com/casualnomad/TheCasualNomad">Github %%ENV%% v1.5.3</a>
+    <a  class="ai-badge" href="https://github.com/casualnomad/TheCasualNomad">Github %%ENV%% v1.5.5</a>
 
     <div class="setup-field">
       <label>Destination / Trip Type</label>
@@ -1076,12 +1083,12 @@ function updateAuthUI() {
   const saveTripBtn = document.getElementById('save-trip-btn');
   const setupLink = document.getElementById('setup-trips-link');
   if (currentUser) {
-    bar.innerHTML = `<a onclick="loadTrips()">My Trips</a><span class="auth-sep">·</span><span>${currentUser.email}</span><span class="auth-sep">·</span><a onclick="signOut()">Sign out</a>`;
+    bar.innerHTML = `<div class="auth-pill"><span class="auth-pill-email">${currentUser.email}</span><a class="auth-pill-link" onclick="loadTrips()">My Trips</a><span class="auth-pill-divider"></span><a class="auth-pill-signout" onclick="signOut()">Sign out</a></div>`;
     if (myTripsBtn) myTripsBtn.style.display = 'inline-flex';
     if (saveTripBtn) saveTripBtn.style.display = 'inline-flex';
     if (setupLink) setupLink.style.display = 'block';
   } else {
-    bar.innerHTML = `<a onclick="openAuthModal()">Sign in to save trips</a>`;
+    bar.innerHTML = `<a class="auth-sign-in" onclick="openAuthModal()">✦ Sign in</a>`;
     if (myTripsBtn) myTripsBtn.style.display = 'none';
     if (saveTripBtn) saveTripBtn.style.display = 'none';
     if (setupLink) setupLink.style.display = 'none';

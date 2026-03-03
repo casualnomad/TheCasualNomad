@@ -13,7 +13,10 @@ Site is [live right here](https://thecasualnomad.xyz), give it a try.
 - Tracks packed items and current weight against your limit (colour-coded status)
 - Shows a "Trip Intelligence" panel with destination overview, climate, activities, and cost estimates
 - Persists everything to `localStorage` — works offline after the initial generation
-- Lets you manually add categories/items, delete anything, reset ticks, and export to CSV
+- Lets you manually add categories/items, delete anything, reset ticks, and export/import CSV
+- **Sign in with a magic link** (no password) to save trips to the cloud and access them from any device
+- **My Trips screen** — view, load, and delete all your saved trips
+- **Save Trip button** — explicitly save any list to the cloud, including CSV imports
 
 ---
 
@@ -23,9 +26,11 @@ Site is [live right here](https://thecasualnomad.xyz), give it a try.
 |---|---|
 | Frontend | Vanilla HTML/CSS/JS, no framework |
 | AI | Anthropic Claude (`claude-haiku-4-5-20251001`) |
-| Backend | Cloudflare Worker (API proxy + rate limiting) |
-| Middleware | Cloudflare Pages Function (`functions/api/generate.js`) |
-| Rate limiting | Cloudflare KV |
+| Backend | Cloudflare Worker (AI proxy + rate limiting) |
+| Middleware | Cloudflare Pages Functions (`functions/api/`) |
+| Auth | Magic link via Resend email, sessions in D1 |
+| Storage | `localStorage` (always) + Cloudflare D1 (when signed in) |
+| Rate limiting | Cloudflare KV (`RATE_LIMIT_KV`) |
 | Hosting | Cloudflare Pages |
 
 ---
@@ -33,7 +38,9 @@ Site is [live right here](https://thecasualnomad.xyz), give it a try.
 ## Architecture
 
 ```
-Browser → Pages Function (/api/generate) → Worker (via Service Binding) → Anthropic API
+Browser → Pages Function (/api/generate) → Worker (Service Binding) → Anthropic API
+Browser → Pages Function (/api/auth/*)   → AUTH_KV (tokens) + D1 (users, sessions) + Resend
+Browser → Pages Function (/api/trips/*)  → D1 (trips)
 ```
 
 The **Cloudflare Worker** (`worker.js`) handles all AI calls. It:
@@ -42,19 +49,47 @@ The **Cloudflare Worker** (`worker.js`) handles all AI calls. It:
 - Validates prompt size (max 4000 chars) and enforces a 45-second timeout
 - Strips markdown fences from Claude's response and returns clean JSON
 
-The **Pages Function** (`functions/api/generate.js`) acts as a thin proxy — it receives POST requests from the frontend and forwards them to the Worker via the `PACKING_WORKER` binding.
+The **Pages Functions** under `functions/api/` handle auth and trip storage:
+- `auth/request-link` — validates email, stores one-time token in KV (15-min TTL), sends magic link via Resend
+- `auth/verify` — validates token, upserts user in D1, creates session in D1, sets HttpOnly cookie, redirects home
+- `auth/me` — validates session cookie against D1, returns `{email}`
+- `auth/logout` — deletes session from D1, expires cookie
+- `trips/index` — GET list of trips / POST create trip
+- `trips/[id]` — GET / PUT / DELETE a trip by ID
+
+---
+
+## Auth flow
+
+1. User enters email → `POST /api/auth/request-link` → token stored in `AUTH_KV` → magic link emailed via Resend
+2. User clicks link → `GET /api/auth/verify?token=...` → token validated + deleted → user upserted in D1 → session created in D1 → HttpOnly cookie set → redirect to `/?_auth=email`
+3. Page loads → `_auth` URL param sets `currentUser` immediately (no server round-trip) → URL cleaned with `history.replaceState`
+4. All subsequent requests include the session cookie → validated against D1 sessions table
+
+Sessions are stored in D1 (not KV) for strong consistency — the session is immediately readable after the magic link redirect.
 
 ---
 
 ## Project structure
 
 ```
-├── index.html               # Entire frontend (single page app)
-├── worker.js                # Cloudflare Worker (AI proxy + rate limiting)
+├── index.html                        # Entire frontend (single-page app, 4 screens)
+├── worker.js                         # Cloudflare Worker (AI proxy + rate limiting)
+├── schema.sql                        # D1 schema — users, trips, sessions tables
+├── dummy.data                        # Sample Vietnam trip data for UI testing
 ├── functions/
+│   ├── _shared/
+│   │   └── auth.js                   # Shared helpers: getSession(), unauthorized(), json()
 │   └── api/
-│       └── generate.js      # Pages Function (forwards to Worker)
-├── dummy.data               # Sample Vietnam trip data for testing
+│       ├── generate.js               # Pages Function — forwards to Worker
+│       ├── auth/
+│       │   ├── request-link.js       # POST — send magic link email
+│       │   ├── verify.js             # GET  — validate token, create session
+│       │   ├── me.js                 # GET  — return current user or 401
+│       │   └── logout.js             # POST — expire session
+│       └── trips/
+│           ├── index.js              # GET list / POST create
+│           └── [id].js               # GET / PUT / DELETE by id
 └── .gitignore
 ```
 
@@ -62,44 +97,49 @@ The **Pages Function** (`functions/api/generate.js`) acts as a thin proxy — it
 
 ## Deployment
 
-### Cloudflare Pages
+### 1. Create Cloudflare resources
+
+```bash
+# Create the D1 database
+wrangler d1 create packing-db
+
+# Create the AUTH_KV namespace (for magic link tokens)
+wrangler kv:namespace create AUTH_KV
+```
+
+### 2. Run the D1 schema
+
+```bash
+wrangler d1 execute packing-db --file=schema.sql
+```
+
+### 3. Deploy the Worker
+
+```bash
+wrangler deploy worker.js --name your-worker-name
+wrangler secret put ANTHROPIC_API_KEY
+```
+
+Bind `RATE_LIMIT_KV` in your `wrangler.toml` or via the dashboard.
+
+### 4. Configure the Pages project
 
 **Build command:**
 ```bash
 sed -i "s|%%ENV%%|$(echo $CF_PAGES_BRANCH)|g" index.html
 ```
 
-This injects the current branch name into `index.html` at build time (used to flag non-production environments).
-
 **Build output directory:** `/` (root)
 
-### Bindings required
-
-In your **Pages project** settings:
+**Bindings required** (Pages project settings):
 
 | Type | Name | Value |
 |---|---|---|
 | Service Binding | `PACKING_WORKER` | Your deployed Worker name |
-
-In your **Worker** settings:
-
-| Type | Name | Value |
-|---|---|---|
-| Secret | `ANTHROPIC_API_KEY` | Your Anthropic API key |
-| KV Namespace | `RATE_LIMIT_KV` | A KV namespace for rate limiting |
-
-### Deploying the Worker
-
-```bash
-wrangler deploy worker.js --name your-worker-name
-```
-
-Set secrets:
-```bash
-wrangler secret put ANTHROPIC_API_KEY
-```
-
-Bind the KV namespace in your `wrangler.toml` or via the dashboard.
+| D1 Database | `DB` | `packing-db` |
+| KV Namespace | `AUTH_KV` | The AUTH_KV namespace created above |
+| Secret | `RESEND_API_KEY` | Your Resend API key |
+| Environment Variable | `APP_URL` | `https://yourdomain.com` |
 
 ---
 
@@ -107,9 +147,29 @@ Bind the KV namespace in your `wrangler.toml` or via the dashboard.
 
 The app has no build step. Open `index.html` directly or serve it statically.
 
-To test the full AI flow locally, you'll need to run the Worker with Wrangler and update the fetch target in `functions/api/generate.js` accordingly.
+To test the full flow locally with Wrangler:
+
+```bash
+wrangler pages dev . --binding DB=packing-db --kv AUTH_KV=<namespace-id>
+```
+
+Set local secrets in a `.dev.vars` file:
+```
+RESEND_API_KEY=re_...
+APP_URL=http://localhost:8788
+```
 
 The `dummy.data` file contains a complete pre-generated Vietnam trip response — useful for UI testing without hitting the API.
+
+---
+
+## D1 schema
+
+```sql
+users    (id, email, created_at)
+trips    (id, user_id, dest, created_at, updated_at, data)  -- data is JSON
+sessions (id, user_id, email, created_at, expires_at)       -- 30-day TTL
+```
 
 ---
 
@@ -122,7 +182,7 @@ Each AI-generated item can carry one badge:
 | `key` | Essential item, don't forget it |
 | `buy` | Purchase before you travel |
 | `local` | Buy at the destination |
-| `hire` | Rent locally, don't pack it |
+| `hire` | Rent locally, don't pack it (weight = 0) |
 
 ---
 
